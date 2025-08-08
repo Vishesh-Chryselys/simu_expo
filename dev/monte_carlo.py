@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.stats import beta
+
 
 class MonteCarloSimulator:
     def __init__(self, n_simulations, final_baseline_trend, event_params,
@@ -13,45 +15,70 @@ class MonteCarloSimulator:
             "gtn": gtn_param
         }
 
-    def sample_from_distribution(self, dist_type, low=None, high=None, mean=None, std=None, base=None, mode=None):
-        mode = base  # Support legacy key
+    def sample_from_distribution(
+    self,
+    dist_type,
+    low=None,
+    high=None,
+    mean=None,
+    std=None,
+    base=None,
+    mode=None,
+    probs=None
+    ):
+        mode = mode or base
 
         if dist_type == 'uniform':
             if low is None or high is None:
-                raise ValueError("Uniform distribution requires 'low' and 'high'")
+                raise ValueError("Uniform requires 'low' and 'high'")
             return np.random.uniform(low, high)
 
         elif dist_type == 'normal':
-            # Infer mean/std from bounds if not provided
             if mean is None or std is None:
                 if low is not None and high is not None:
                     mean = (low + high) / 2
-                    std = abs(high - low) / 4  # Make sure it's positive
+                    std = abs(high - low) / 4
                 else:
-                    raise ValueError("Normal distribution requires 'mean/std' or 'low/high'")
+                    raise ValueError("Normal requires 'mean/std' or 'low/high'")
             if std < 0:
-                raise ValueError(f"Standard deviation must be >= 0, got {std}")
+                raise ValueError("Standard deviation must be >= 0")
             return np.random.normal(mean, std)
 
         elif dist_type == 'triangular':
             if low is None or high is None or mode is None:
-                raise ValueError("Triangular distribution requires 'low', 'high', and 'mode/base'")
+                raise ValueError("Triangular requires 'low', 'high', and 'mode/base'")
             if not (low <= mode <= high):
-                raise ValueError(f"Triangular requires low <= mode <= high, got low={low}, mode={mode}, high={high}")
+                raise ValueError("Triangular requires low <= mode <= high")
             return np.random.triangular(low, mode, high)
 
         elif dist_type == 'discrete_uniform':
             if low is None or high is None or mode is None:
-                raise ValueError("Discrete uniform requires 'low', 'high', and 'mode/base'")
-            return np.random.choice([low, mode, high])
+                raise ValueError("Discrete uniform requires 'low', 'high', and 'mode'")
+
+            # Default equal probabilities
+            probs = probs or [1/3, 1/3, 1/3]
+            
+            # Validate probability length
+            if len(probs) != 3:
+                raise ValueError("Discrete uniform 'probs' must be a list of three values for low, mode, and high")
+
+            return np.random.choice([low, mode, high], p=probs)
+
+
+        elif dist_type == 'beta_pert':
+            if low is None or high is None or mode is None:
+                raise ValueError("Beta-PERT requires 'low', 'high', and 'mode/base'")
+            # Calculate alpha and beta using PERT formula
+            mean = (low + 4 * mode + high) / 6
+            alpha = ((mean - low) * (2 * mode - low - high)) / ((mode - mean) * (high - low)) if mode != mean else 2.0
+            beta_val = alpha * (high - mean) / (mean - low) if (mean - low) != 0 else 2.0
+            sample = beta.rvs(alpha, beta_val)
+            return low + sample * (high - low)
 
         else:
             raise ValueError(f"Unsupported distribution type: {dist_type}")
-
-
-
-
-
+        
+        
     def run(self):
         # Detect how many SKUs by finding the first split param
         sku_split_start = None

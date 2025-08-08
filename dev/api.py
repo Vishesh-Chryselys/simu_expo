@@ -101,3 +101,12 @@ async def simulate(request: SimulationRequest):
 #
 #     ]
 # }
+
+
+# distribution_params = {
+#     "uniform": ["low", "high"],
+#     "normal": ["mean", "std"],  # or optionally "low", "high"             mode==base
+#     "triangular": ["low", "high", "mode"],
+#     "discrete_uniform": ["low", "mode", "high"], # define probab
+#     "beta_pert": ["low", "high", "mode"],
+# }
