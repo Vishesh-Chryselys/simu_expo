@@ -80,65 +80,53 @@ class MonteCarloSimulator:
         
         
     def run(self):
-        # Detect how many SKUs by finding the first split param
-        sku_split_start = None
-        n_skus = 1
-        for i, key in enumerate(self.param_dict):
-            if isinstance(self.param_dict[key], list):
-                sku_split_start = key
-                n_skus = len(self.param_dict[key])
-                break
-
         all_results = []
 
         for _ in range(self.n_simulations):
-            # --- Event factors are always consolidated ---
+            # --- Sample event factors (always consolidated) ---
             event_factors = sum(self.sample_from_distribution(**event) for event in self.event_params)
 
-            sampled_params = {}
-
-            # --- Step 1: Sample consolidated values BEFORE split ---
-            split_started = False
+            # --- Sample all parameters (no lists expected) ---
+            sampled_values = {}
             for key, param in self.param_dict.items():
                 if isinstance(param, list):
-                    split_started = True
-                    break
-                sampled_params[key] = self.sample_from_distribution(**param)
+                    raise ValueError("SKU-level split provided, but SKU loop is disabled.")
+                sampled_values[key] = self.sample_from_distribution(**param)
 
-            # --- Step 2: SKU Loop ---
-            sku_results = []
-            for i in range(n_skus):
-                cs = sampled_params['class_share'] if 'class_share' in sampled_params else \
-                    self.sample_from_distribution(**self.param_dict['class_share'][i])
-                ps = sampled_params['product_share'] if 'product_share' in sampled_params else \
-                    self.sample_from_distribution(**self.param_dict['product_share'][i])
-                gp = sampled_params['gross_price'] if 'gross_price' in sampled_params else \
-                    self.sample_from_distribution(**self.param_dict['gross_price'][i])
-                gtn = sampled_params['gtn'] if 'gtn' in sampled_params else \
-                    self.sample_from_distribution(**self.param_dict['gtn'][i])
+            # --- Compute net sales ---
+            cs = sampled_values["class_share"]
+            ps = sampled_values["product_share"]
+            gp = sampled_values["gross_price"]
+            gtn = sampled_values["gtn"]
 
-                net_sales = self.final_baseline_trend * (1 + event_factors) * cs * ps * gp * (1 - gtn)
-                sku_results.append(net_sales)
+            net_sales = self.final_baseline_trend * (1 + event_factors) * cs * ps * gp * (1 - gtn)
 
-            total_sales = sum(sku_results)
-            all_results.append(total_sales)
+            # --- Store full result ---
+            all_results.append({
+                "event_factors": round(event_factors, 4),
+                "class_share": round(cs, 4),
+                "product_share": round(ps, 4),
+                "gross_price": round(gp, 4),
+                "gtn": round(gtn, 4),
+                "net_sales": round(net_sales, 2)
+            })
 
-        all_results = np.array(all_results)
+        net_sales_array = np.array([result["net_sales"] for result in all_results])
         summary = {
-            "mean": round(float(np.mean(all_results)), 2),
-            "median": round(float(np.median(all_results)), 2),
-            "std": round(float(np.std(all_results)), 2),
-            "p5": round(float(np.percentile(all_results, 5)), 2),
-            "p10": round(float(np.percentile(all_results, 10)), 2),
-            "p25": round(float(np.percentile(all_results, 25)), 2),
-            "p50": round(float(np.percentile(all_results, 50)), 2),
-            "p75": round(float(np.percentile(all_results, 75)), 2),
-            "p90": round(float(np.percentile(all_results, 90)), 2),
-            "p95": round(float(np.percentile(all_results, 95)), 2),
+            "mean": round(float(np.mean(net_sales_array)), 2),
+            "median": round(float(np.median(net_sales_array)), 2),
+            "std": round(float(np.std(net_sales_array)), 2),
+            "p5": round(float(np.percentile(net_sales_array, 5)), 2),
+            "p10": round(float(np.percentile(net_sales_array, 10)), 2),
+            "p25": round(float(np.percentile(net_sales_array, 25)), 2),
+            "p50": round(float(np.percentile(net_sales_array, 50)), 2),
+            "p75": round(float(np.percentile(net_sales_array, 75)), 2),
+            "p90": round(float(np.percentile(net_sales_array, 90)), 2),
+            "p95": round(float(np.percentile(net_sales_array, 95)), 2),
             "n_simulations": self.n_simulations
         }
 
         return {
             "summary": summary,
-            "all_results": [round(float(x), 2) for x in all_results]
+            "all_results": all_results
         }
