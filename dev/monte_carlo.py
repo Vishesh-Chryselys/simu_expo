@@ -148,9 +148,9 @@ class MonteCarloSimulator:
                     sku_sales_values.append(net_sales)
 
                     sku_details.append({
-                        "gross_price": round(gp, 2),
-                        "gtn": round(gtn, 2),
-                        "net_sales": round(net_sales, 2)
+                        "gross_price": round(gp, 10),
+                        "gtn": round(gtn, 10),
+                        "net_sales": round(net_sales, 10)
                     })
             else:
                 gp = float(self._sample_param(gp_spec))
@@ -159,18 +159,18 @@ class MonteCarloSimulator:
                 sku_sales_values.append(net_sales)
 
                 sku_details.append({
-                    "gross_price": round(gp, 2),
-                    "gtn": round(gtn, 2),
-                    "net_sales": round(net_sales, 2)
+                    "gross_price": round(gp, 10),
+                    "gtn": round(gtn, 10),
+                    "net_sales": round(net_sales, 10)
                 })
 
             overall_net_sales = float(np.sum(sku_sales_values))
 
             result_entry = {
-                "event_factors": round(event_factors, 2),
-                "class_share": round(cs, 2),
-                "product_share": round(ps, 2),
-                "overall_net_sales": round(overall_net_sales, 2),
+                "event_factors": round(event_factors, 10),
+                "class_share": round(cs, 10),
+                "product_share": round(ps, 10),
+                "overall_net_sales": round(overall_net_sales, 10),
                 "skus": sku_details
             }
 
@@ -179,22 +179,22 @@ class MonteCarloSimulator:
         # Use overall net sales for histogram + summary
         net_sales_array = np.array([r["overall_net_sales"] for r in all_results], dtype=float)
         summary = {
-            "mean": round(float(np.mean(net_sales_array)), 2),
-            "median": round(float(np.median(net_sales_array)), 2),
-            "std": round(float(np.std(net_sales_array)), 2),
+            "mean": round(float(np.mean(net_sales_array)), 10),
+            "median": round(float(np.median(net_sales_array)), 10),
+            "std": round(float(np.std(net_sales_array)), 10 ),
 
             # Percentiles needed for certainty bands
-            "p5": round(float(np.percentile(net_sales_array, 5)), 2),
-            "p25": round(float(np.percentile(net_sales_array, 25)), 2),
-            "p37_5": round(float(np.percentile(net_sales_array, 37.5)), 2),
-            "p45": round(float(np.percentile(net_sales_array, 45)), 2),
-            "p50": round(float(np.percentile(net_sales_array, 50)), 2),
-            "p55": round(float(np.percentile(net_sales_array, 55)), 2),
-            "p62_5": round(float(np.percentile(net_sales_array, 62.5)), 2),
-            "p75": round(float(np.percentile(net_sales_array, 75)), 2),
-            "p95": round(float(np.percentile(net_sales_array, 95)), 2),
-            "p10": round(float(np.percentile(net_sales_array, 10)), 2),
-            "p90": round(float(np.percentile(net_sales_array, 90)), 2),
+            "p5": round(float(np.percentile(net_sales_array, 5)), 10),
+            "p25": round(float(np.percentile(net_sales_array, 25)), 10),
+            "p37_5": round(float(np.percentile(net_sales_array, 37.5)), 10),
+            "p45": round(float(np.percentile(net_sales_array, 45)), 10),
+            "p50": round(float(np.percentile(net_sales_array, 50)), 10),
+            "p55": round(float(np.percentile(net_sales_array, 55)), 10),
+            "p62_5": round(float(np.percentile(net_sales_array, 62.5)), 10),
+            "p75": round(float(np.percentile(net_sales_array, 75)), 10),
+            "p95": round(float(np.percentile(net_sales_array, 95)), 10),
+            "p10": round(float(np.percentile(net_sales_array, 10)), 10),
+            "p90": round(float(np.percentile(net_sales_array, 90)), 10),
 
             "n_simulations": int(self.n_simulations),
         }

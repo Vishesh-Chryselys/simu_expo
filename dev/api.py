@@ -121,3 +121,25 @@ async def range_forecast(request: RangeForecastRequest):
 #     "p95": 1480.0
 #   }
 # }
+
+
+{
+"n_simulations": 1000,
+"final_baseline_trend": 10000,
+"event_params": [
+{"dist_type": "normal", "low": 0.04, "high": 0.04, "base": 0.04},
+{"dist_type": "uniform", "low": 0.04, "high": 0.04, "base": 0.04},
+{"dist_type": "uniform", "low": 0.04, "high": 0.04, "base": 0.04}
+],
+"class_share_param":{"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2},
+"product_share_param":{"dist_type":"uniform","low":0.5,"high":0.5,"base":0.5},
+"sku_splits":[0.3,0.7],
+"gross_price_param":[
+{"dist_type":"uniform","low":200,"high":200,"base":200},
+{"dist_type":"uniform","low":250,"high":250,"base":250}
+],
+"gtn_param":[
+{"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2},
+{"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2}
+]
+}
