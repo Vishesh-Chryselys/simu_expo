@@ -129,9 +129,7 @@ class MonteCarloSimulator:
 
         for _ in range(self.n_simulations):
             # Event factors (additive %)
-            event_factors = 0.0
-            for ev in self.event_params:
-                event_factors += float(self._sample_param(ev))
+            event_factors = sum(float(self._sample_param(ev)) for ev in self.event_params)
 
             # Brand-level params
             cs = float(self._sample_param(self.param_dict["class_share"]))
@@ -140,31 +138,46 @@ class MonteCarloSimulator:
             brand_volume = self.final_baseline_trend * (1.0 + event_factors) * cs * ps
 
             sku_sales_values = []
+            sku_details = []
             if use_sku:
                 for i, split in enumerate(self.sku_splits):
                     sku_volume = brand_volume * split
                     gp = float(self._sample_param(gp_spec[i] if isinstance(gp_spec, list) else gp_spec))
                     gtn = float(self._sample_param(gtn_spec[i] if isinstance(gtn_spec, list) else gtn_spec))
-                    sku_sales_values.append(sku_volume * gp * (1.0 - gtn))
+                    net_sales = sku_volume * gp * (1.0 - gtn)
+                    sku_sales_values.append(net_sales)
+
+                    sku_details.append({
+                        "gross_price": round(gp, 2),
+                        "gtn": round(gtn, 2),
+                        "net_sales": round(net_sales, 2)
+                    })
             else:
                 gp = float(self._sample_param(gp_spec))
                 gtn = float(self._sample_param(gtn_spec))
-                sku_sales_values.append(brand_volume * gp * (1.0 - gtn))
+                net_sales = brand_volume * gp * (1.0 - gtn)
+                sku_sales_values.append(net_sales)
 
-            brand_net_sales = float(np.sum(sku_sales_values))
+                sku_details.append({
+                    "gross_price": round(gp, 2),
+                    "gtn": round(gtn, 2),
+                    "net_sales": round(net_sales, 2)
+                })
+
+            overall_net_sales = float(np.sum(sku_sales_values))
 
             result_entry = {
-                "event_factors": round(event_factors, 6),
-                "class_share": round(cs, 6),
-                "product_share": round(ps, 6),
-                "brand_net_sales": round(brand_net_sales, 2),
+                "event_factors": round(event_factors, 2),
+                "class_share": round(cs, 2),
+                "product_share": round(ps, 2),
+                "overall_net_sales": round(overall_net_sales, 2),
+                "skus": sku_details
             }
-            for i, sales in enumerate(sku_sales_values, start=1):
-                result_entry[f"sku_{i}_net_sales"] = round(float(sales), 2)
 
             all_results.append(result_entry)
 
-        net_sales_array = np.array([r["brand_net_sales"] for r in all_results], dtype=float)
+        # Use overall net sales for histogram + summary
+        net_sales_array = np.array([r["overall_net_sales"] for r in all_results], dtype=float)
         summary = {
             "mean": round(float(np.mean(net_sales_array)), 2),
             "median": round(float(np.median(net_sales_array)), 2),
