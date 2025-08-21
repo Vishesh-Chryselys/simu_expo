@@ -16,7 +16,7 @@ class DistributionParam(BaseModel):
 
 class SimulationRequest(BaseModel):
     n_simulations: int
-    final_baseline_trend: float
+    final_net_sales: float
     event_params: List[DistributionParam]
     class_share_param: Union[DistributionParam, List[DistributionParam]]
     product_share_param: Union[DistributionParam, List[DistributionParam]]
@@ -33,7 +33,7 @@ async def simulate(request: SimulationRequest):
     
     sim = MonteCarloSimulator(
         n_simulations=request.n_simulations,
-        final_baseline_trend=request.final_baseline_trend,
+        final_net_sales=request.final_net_sales,
         event_params=[param.dict() for param in request.event_params],
         class_share_param=convert_param(request.class_share_param),
         product_share_param=convert_param(request.product_share_param),
@@ -63,7 +63,7 @@ async def range_forecast(request: RangeForecastRequest):
 
 # {
 #   "n_simulations": 1000,
-#   "final_baseline_trend": 10000,
+#   "final_net_sales": 10000,
 #   "event_params": [
 #     {"dist_type": "uniform", "low": 0.04, "high": 0.15, "base": 0.10},
 #     {"dist_type": "uniform", "low": 0.06, "high": 0.10, "base": 0.08},
@@ -78,7 +78,7 @@ async def range_forecast(request: RangeForecastRequest):
 
 # {
 #   "n_simulations": 1000,
-#   "final_baseline_trend": 10000,
+#   "final_net_sales": 10000,
 #   "event_params": [
 #     {"dist_type": "normal", "low": 0.04, "high": 0.15, "base": 0.10},
 #     {"dist_type": "uniform", "low": 0.06, "high": 0.10, "base": 0.08},
@@ -123,23 +123,23 @@ async def range_forecast(request: RangeForecastRequest):
 # }
 
 
-{
-"n_simulations": 1000,
-"final_baseline_trend": 10000,
-"event_params": [
-{"dist_type": "normal", "low": 0.04, "high": 0.04, "base": 0.04},
-{"dist_type": "uniform", "low": 0.04, "high": 0.04, "base": 0.04},
-{"dist_type": "uniform", "low": 0.04, "high": 0.04, "base": 0.04}
-],
-"class_share_param":{"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2},
-"product_share_param":{"dist_type":"uniform","low":0.5,"high":0.5,"base":0.5},
-"sku_splits":[0.3,0.7],
-"gross_price_param":[
-{"dist_type":"uniform","low":200,"high":200,"base":200},
-{"dist_type":"uniform","low":250,"high":250,"base":250}
-],
-"gtn_param":[
-{"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2},
-{"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2}
-]
-}
+# {
+# "n_simulations": 1000,
+# "final_net_sales": 10000,
+# "event_params": [
+# {"dist_type": "normal", "low": 0.04, "high": 0.04, "base": 0.04},
+# {"dist_type": "uniform", "low": 0.04, "high": 0.04, "base": 0.04},
+# {"dist_type": "uniform", "low": 0.04, "high": 0.04, "base": 0.04}
+# ],
+# "class_share_param":{"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2},
+# "product_share_param":{"dist_type":"uniform","low":0.5,"high":0.5,"base":0.5},
+# "sku_splits":[0.3,0.7],
+# "gross_price_param":[
+# {"dist_type":"uniform","low":200,"high":200,"base":200},
+# {"dist_type":"uniform","low":250,"high":250,"base":250}
+# ],
+# "gtn_param":[
+# {"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2},
+# {"dist_type":"uniform","low":0.2,"high":0.2,"base":0.2}
+# ]
+# }

@@ -6,7 +6,7 @@ class MonteCarloSimulator:
     def __init__(
         self,
         n_simulations,
-        final_baseline_trend,
+        final_net_sales,
         event_params,
         class_share_param,
         product_share_param,
@@ -18,7 +18,7 @@ class MonteCarloSimulator:
         Monte Carlo Simulator for net sales with optional SKU split.
         """
         self.n_simulations = n_simulations
-        self.final_baseline_trend = float(final_baseline_trend)
+        self.final_net_sales = float(final_net_sales)
         self.event_params = event_params or []
         self.param_dict = {
             "class_share": class_share_param,
@@ -77,20 +77,20 @@ class MonteCarloSimulator:
         elif dist_type == "beta_pert":
             if low is None or high is None or base is None:
                 raise ValueError("Beta-PERT requires 'low', 'high', and 'base'.")
+            # Mean with λ = 4 (classic PERT weighting)
             mean_pert = (low + 4 * base + high) / 6
             if np.isclose(base, mean_pert) or np.isclose(high, low):
                 alpha, beta_val = 2.0, 2.0
             else:
-                alpha = ((mean_pert - low) * (2 * base - low - high)) / (
-                    (base - mean_pert) * (high - low)
-                )
+                alpha = 1 + 4 * (base - low) / (high - low)
+                beta_val = 1 + 4 * (high - base) / (high - low)
                 if alpha <= 0:
                     alpha = 2.0
-                beta_val = alpha * (high - mean_pert) / max(mean_pert - low, 1e-12)
                 if beta_val <= 0:
                     beta_val = 2.0
             sample = beta.rvs(alpha, beta_val)
             return low + sample * (high - low)
+
 
         elif dist_type == "discrete_uniform":
             if low is None or high is None or base is None:
@@ -128,14 +128,20 @@ class MonteCarloSimulator:
                 raise ValueError("Length of gtn_param list must match number of sku_splits.")
 
         for _ in range(self.n_simulations):
-            # Event factors (additive %)
-            event_factors = sum(float(self._sample_param(ev)) for ev in self.event_params)
+            # Sample individual event factors
+            individual_events = []
+            for i, event_spec in enumerate(self.event_params):
+                event_value = float(self._sample_param(event_spec))
+                individual_events.append(event_value)
+            
+            # Total event factors (for calculation)
+            event_factors = sum(individual_events)
 
             # Brand-level params
             cs = float(self._sample_param(self.param_dict["class_share"]))
             ps = float(self._sample_param(self.param_dict["product_share"]))
 
-            brand_volume = self.final_baseline_trend * (1.0 + event_factors) * cs * ps
+            brand_volume = self.final_net_sales * (1.0 + event_factors) * cs * ps
 
             sku_sales_values = []
             sku_details = []
@@ -166,13 +172,23 @@ class MonteCarloSimulator:
 
             overall_net_sales = float(np.sum(sku_sales_values))
 
-            result_entry = {
-                "event_factors": round(event_factors, 10),
+            result_entry = {}
+            
+            # Add individual events at the top
+            for i, event_value in enumerate(individual_events):
+                result_entry[f"event_{i+1}"] = round(event_value, 10)
+            
+            # Add total event factors
+            result_entry["total_event_factors"] = round(event_factors, 10)
+            
+            # Add other parameters
+            result_entry.update({
                 "class_share": round(cs, 10),
                 "product_share": round(ps, 10),
                 "overall_net_sales": round(overall_net_sales, 10),
+                "sku_split": self.sku_splits if use_sku else None,
                 "skus": sku_details
-            }
+            })
 
             all_results.append(result_entry)
 
